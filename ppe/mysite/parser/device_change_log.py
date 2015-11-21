@@ -9,9 +9,9 @@ Exported:
 	devs: a list of all change records from excel files
 '''
 import xlrd
-from models import DeviceChange
+from mysite.parser.my_models import DeviceChange
 import MySQLdb
-from constants import *
+from mysite.parser.constants import *
 import os
 
 devs = []
@@ -47,11 +47,11 @@ def _store(conn):
 def _update(conn):
 	cur = conn.cursor()
 	for item in devs:
-		count = cur.execute('select * from device_info where number = "%s"' % item.number)
+		count = cur.execute('select * from mysite_device where number = "%s"' % item.number)
 		if count != 1:
 			print "设备编号: %s 不存在该设备的纪录" % item.number
 		else:
-			sql = 'update device_info set location = "%s", user = "%s"' % (item.new_location, item.new_user)
+			sql = 'update mysite_device set location = "%s", user = "%s"' % (item.new_location, item.new_user)
 			cur.execute(sql)
 	conn.commit()
 	cur.close()
@@ -75,15 +75,29 @@ def go(filename):
 
 def go_f(filecontent):
 	# 如果不指定 charset 为 utf8 ，则插入中文时 mysql-python 报错
-	conn= MySQLdb.connect(host=HOST, port = PORT, user=USER, passwd=PASSWD, db=DB, charset="utf8")
-	
-	data = xlrd.open_workbook(file_contents=filecontent)
+	try:
+		conn= MySQLdb.connect(host=HOST, port = PORT, user=USER, passwd=PASSWD, db=DB, charset="utf8")
+	except Exception,e:
+		return False,"建立数据库连接失败"
 
-	_resolve(data)
-	_store(conn)
-	_update(conn)
+	try:
+		data = xlrd.open_workbook(file_contents=filecontent)
+	except:
+		return False,"打开Excel文件失败"
+
+	try:
+		_resolve(data)
+	except:
+		return False,"解析文件出错，请检查格式"
+
+	try:
+		_store(conn)
+		_update(conn)
+	except:
+		return False,"数据库操作失败"
 
 	conn.close()
+	return True,"解析文件，更新信息成功"
 
 if __name__ == '__main__':
 	filename = u'固定资产/2015年3月31日固定资产转移登记表.xlsx'
