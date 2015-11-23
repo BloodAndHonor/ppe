@@ -5,6 +5,8 @@ from mysite.parser import device_change_log,device_info
 from mysite.models import *
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
+import xlwt
+import re
 
 ############
 #
@@ -104,9 +106,102 @@ def dev_s(request):
 		if location != "":
 			kwargs['location'] = location
 
-		print kwargs
 		data = serializers.serialize('json', Device.objects.filter(**kwargs))
 		return HttpResponse(json.dumps(data), content_type="application/json")
 	else:
 		return HttpResponseRedirect('/')
 
+@csrf_exempt
+def chg(request):
+	check_login(request)
+	number = request.GET['number']
+	return render(request, 'change.html', {"number": number})
+
+@csrf_exempt
+def chg_s(request):
+	check_login(request)
+	number = request.POST['number'].strip()
+	# 去掉查询中的 \x7f 也算是一个适配
+	if number.find('\x7f'):
+		number = number[:-1]
+
+	data = serializers.serialize('json', Change.objects.filter(number=number))
+	return HttpResponse(json.dumps(data), content_type="application/json")
+
+##########
+#
+# 导出相关
+#
+##########
+def export_dev(request):
+	check_login(request)
+	if request.method == 'POST':
+		number = request.POST['number']
+		name = request.POST['name']
+		status = request.POST['status']
+		user = request.POST['user']
+		location = request.POST['location']
+
+		kwargs = {}
+		# 解析出来的excel设备编号后面都多了这个，这里做个适配
+		# 原因待查
+		if number != "":
+			kwargs['number'] = number + '\x7f'
+
+		if name != "":
+			kwargs['name'] = name
+
+		if status != "":
+			kwargs['status'] = status
+
+		if user != "":
+			kwargs['user'] = user
+
+		if location != "":
+			kwargs['location'] = location
+
+		data = Device.objects.filter(**kwargs)
+
+		# 数据写入excel
+		w = xlwt.Workbook(encoding='utf-8')
+		ws = w.add_sheet('sheet-1')
+		ws.write(0,0,u'设备编号')
+		ws.write(0,1,u'设备名称')
+		ws.write(0,2,u'分类号')
+		ws.write(0,3,u'型号')
+		ws.write(0,4,u'规格')
+		ws.write(0,5,u'单价')
+		ws.write(0,6,u'厂家')
+		ws.write(0,7,u'购置日期')
+		ws.write(0,8,u'现状')
+		ws.write(0,9,u'经费科目')
+		ws.write(0,10,u'使用方向')
+		ws.write(0,11,u'使用人')
+		ws.write(0,12,u'使用地点')
+		ws.write(0,13,u'备注')
+
+		row = 1
+		for item in data:
+			ws.write(row,0, item.number)
+			ws.write(row,1, item.name)
+			ws.write(row,2, item.category_number)
+			ws.write(row,3, item.model)
+			ws.write(row,4, item.specification)
+			ws.write(row,5, item.price)
+			ws.write(row,6, item.vender)
+			ws.write(row,7, str(item.buy_date))
+			ws.write(row,8, item.status)
+			ws.write(row,9, item.funds_category)
+			ws.write(row,10, item.use_direction)
+			ws.write(row,11, item.user)
+			ws.write(row,12, item.location)
+			ws.write(row,13, item.remarks)
+			row = row + 1
+
+		response = HttpResponse(content_type="application/vnd.ms-excel") #解决ie不能下载的问题
+		response['Content-Disposition'] ='attachment; filename=export.xls' #解决文件名乱码/不显示的问题
+		w.save(response)
+		return response
+		# 导出
+	else:
+		return HttpResponseRedirect('/')

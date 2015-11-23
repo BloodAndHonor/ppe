@@ -12,5 +12,8 @@ urlpatterns = patterns('',
     url(r'^$', mysite.views.index, name='index'), 
     url(r'^up_dev/', mysite.views.upload_device, name='up_dev'), 
     url(r'^up_chg/', mysite.views.upload_change, name='up_chg'), 
-    url(r'^s/', mysite.views.dev_s, name="s")
+    url(r'^s/', mysite.views.dev_s, name='s'),
+    url(r'^chg_s/', mysite.views.chg_s, name='chg_s'),
+    url(r'^chg/', mysite.views.chg, name='chg'), 
+    url(r'^ex/', mysite.views.export_dev, name='export')
 )
