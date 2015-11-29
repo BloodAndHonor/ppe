@@ -15,5 +15,6 @@ urlpatterns = patterns('',
     url(r'^s/', mysite.views.dev_s, name='s'),
     url(r'^chg_s/', mysite.views.chg_s, name='chg_s'),
     url(r'^chg/', mysite.views.chg, name='chg'), 
-    url(r'^ex/', mysite.views.export_dev, name='export')
+    url(r'^ex/', mysite.views.export_dev, name='export'), 
+    url(r'^t/', mysite.views.auto_aban)
 )

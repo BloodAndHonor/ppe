@@ -7,6 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
 import xlwt
 import re
+from django.utils.timezone import now, timedelta
+import datetime
 
 ############
 #
@@ -28,6 +30,8 @@ def login(request):
 		count = User.objects.filter(name=name, password=password).count()
 		if(count > 0):
 			request.session['token'] = 'allowed'
+			# 每一次登录都设置需要自动报废的设备
+			auto_aban()
 			return HttpResponseRedirect('/')
 		else:
 			return HttpResponse("登陆失败")
@@ -205,3 +209,25 @@ def export_dev(request):
 		# 导出
 	else:
 		return HttpResponseRedirect('/')
+
+##############
+#
+# 自动报废
+#
+##############
+def auto_aban():
+	lower_year = now().date().year - 6 #昨天
+	month = now().date().month
+	day = now().date().day
+	try:
+		t = datetime.datetime(lower_year, month, day)
+	except:
+		t = datetime.datetime(lower_year, month, day-1)
+
+	res = Device.objects.filter(in_date__lte=t)
+	# print u'报废处理:'
+	for item in res:
+		# print item.number
+		item.status = u'报废'
+		item.save()
+	return len(res)
