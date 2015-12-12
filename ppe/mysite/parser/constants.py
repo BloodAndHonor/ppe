@@ -15,6 +15,6 @@ PASSWD = '123456'
 DB = 'ppe'
 
 #####  Device Info #######
-INIT_USER = u'万利军'
-INIT_LOCATION = u'仓库'
+INIT_USER = u'待定'
+INIT_LOCATION = u'待定' # 留待上传后处理
 

@@ -16,41 +16,42 @@
 	<h1 class="text-center">固定资产管理平台 <small>信息管理</small></h1>
 	</div>
 	<ol class="breadcrumb">
-	  <li class="active">上传设备信息</li>
+	  <li><a href="{% url 'up_dev' %}">上传设备信息</a></li>
 	  <li><a href="{% url 'up_chg' %}">上传变更信息</a></li>
 	  <li><a href="{% url 'index' %}">查询设备信息</a></li>
-	  <li><a href="{% url 'chg_config' %}">修改配置</a></li>
+	  <li class="active">修改配置</li>
 	  <li><a href="{% url 'chpass' %}">修改密码</a></li>
 	  <li><a href="{% url 'logout' %}">注销</a></li>
 	</ol>
-
-	{% if uploaded %}
-		{% if success %}
-			<div class="alert alert-success" role="alert">操作成功</div>
-		{% else %}
-			<div class="alert alert-danger" role="alert">操作失败</div>
-		{% endif %}
-		<h4>日志</h4>
-		<div class="col-sm-offset-1 col-sm-8">
-		{{ log }}
-		</div>
-	{% else %}
-	<form class="form-horizontal" action="{% url 'up_dev' %}" method="post" enctype="multipart/form-data">
+	{% if changed %}
+		<div class="alert alert-success" role="alert">修改成功</div>
+	{% endif %}
+	<form class="form-horizontal" action="{% url 'chg_config' %}" method="post">
 		{% csrf_token %}
 		<div class="form-group">
-			<label for="inputFile" class="col-sm-2 control-label">设备信息文件:</label>
+			<label for="inputEXP_Y" class="col-sm-2 control-label">过期年限</label>
 			<div class="col-sm-6">
-				<input id="inputFile" class="form-control" type="file" name="file">
+				<input id="inputEXP_Y" class="form-control" type="text" name="exp_y" value="{{ exp_y }}" placeholder="至少为1">
 			</div>
-			<p class="help-block">设备信息文件为Excel文件</p>
+		</div>
+		<div class="form-group">
+			<label for="inputLOC" class="col-sm-2 control-label">初始位置</label>
+			<div class="col-sm-6">
+				<input id="inputLOC" class="form-control" type="text" name="location" value="{{ location }}">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="inputWH" class="col-sm-2 control-label">仓库管理员</label>
+			<div class="col-sm-6">
+				<input id="inputWH" class="form-control" type="text" name="wh_man" value="{{ wh_man }}">
+			</div>
 		</div>
 		<div class="form-group">
 			<div class="col-sm-offset-2 col-sm-8">
-				<button type="submit" class="btn btn-default">确认</button>
+				<button type="submit" class="btn btn-default">修改</button>
 			</div>
 		</div>
 	</form>
-	{% endif %}
   </div>
 </body>
 </html>

@@ -2,10 +2,12 @@
 from django.db import models
 import json
 
+# 用户
 class User(models.Model):
 	name = models.CharField(max_length=20)
 	password = models.CharField(max_length=40)
 
+# 设备
 class Device(models.Model):
 	number = models.CharField(max_length=15, primary_key=True)
 	name = models.CharField(max_length=20)
@@ -30,6 +32,7 @@ class Device(models.Model):
 	funds_card = models.CharField(max_length=50)
 	user = models.CharField(max_length=50)
 
+# 变更
 class Change(models.Model):
 	log_date = models.DateTimeField()
 	name = models.CharField(max_length=20)
@@ -40,3 +43,14 @@ class Change(models.Model):
 	new_location = models.CharField(max_length=20)
 	old_user = models.CharField(max_length=10)
 	new_user = models.CharField(max_length=10)
+
+# MD5
+class FileHash(models.Model):
+	in_date = models.DateTimeField()
+	value = models.CharField(max_length=35)
+	ftype = models.IntegerField(default=0) #0 变更 其它备用
+
+# 配置
+class Config(models.Model):
+	name = models.CharField(max_length=10, primary_key=True)
+	value = models.CharField(max_length=10)

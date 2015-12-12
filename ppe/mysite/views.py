@@ -1,7 +1,7 @@
 #coding: utf-8
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
-from mysite.parser import device_change_log,device_info
+from mysite.parser import device_change_log,device_info, my_models
 from mysite.models import *
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
@@ -9,7 +9,7 @@ import xlwt
 import re
 from django.utils.timezone import now, timedelta
 import datetime
-
+import hashlib
 ############
 #
 # 登陆相关
@@ -17,8 +17,19 @@ import datetime
 ############
 # 初始化
 def init(request):
-	User.objects.create(name="lyp", password="123456")
-	return HttpResponse("初始化成功")
+	if User.objects.all().count() == 0:
+		User.objects.create(name="lyp", password=hashlib.md5("123456").hexdigest())
+		# 清空信息
+		Config.objects.all().delete()
+		Device.objects.all().delete()
+		Change.objects.all().delete()
+		# 初始化
+		Config.objects.create(name='wh_man', value='万利军')
+		Config.objects.create(name='location', value='仓库')
+		Config.objects.create(name='exp_y', value='6')
+		return HttpResponse("初始化成功，用户名 lyp，密码 123456")
+	else:
+		return HttpResponse("已使用，不符合初始化条件")
 
 # 登录
 def login(request):
@@ -27,7 +38,7 @@ def login(request):
 	else:
 		name = request.POST['username']
 		password = request.POST['password']
-		count = User.objects.filter(name=name, password=password).count()
+		count = User.objects.filter(name=name, password=hashlib.md5(password).hexdigest()).count()
 		if(count > 0):
 			request.session['token'] = 'allowed'
 			# 每一次登录都设置需要自动报废的设备
@@ -40,7 +51,7 @@ def login(request):
 def check_login(request):
 	if request.session.get('token','forbidden') == 'allowed':
 		return True
-	return HttpResponseRedirect("/login")
+	return False
 
 # 登出
 def logout(request):
@@ -48,6 +59,24 @@ def logout(request):
 		del request.session['token']
 	return HttpResponseRedirect('/login')
 
+# 修改密码
+def chg_pass(request):
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
+	if request.method == "GET":
+		return render(request, 'password.html', None)
+	else:
+		newpwd = request.POST['newpwd']
+		username = request.POST['username']
+
+		pwd = hashlib.md5(newpwd).hexdigest()
+		tmp = User.objects.get(name=username)
+		if tmp == None:
+			return HttpResponse("用户名不存在")
+		else:
+			tmp.password = pwd
+			tmp.save()
+		return  render(request, 'password.html', {'suc':True})
 ############
 #
 # 解析excel相关
@@ -55,26 +84,78 @@ def logout(request):
 ############
 #首页
 def index(request):
-	check_login(request)
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
 	return render(request,'index.html')
 
 # 更新设备信息 success是否执行成功 log 记录 uploaded 上传过文件处理
 def upload_device(request):
-	check_login(request)
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
 	if request.method == 'POST':
 		success,log = device_info.go_f(request.FILES['file'].read())
+		# 处理初始化仓库管理员和位置 只要它们值都不是 待定 ，那么这么做就是有效的
+		wh_man = Config.objects.get(name="wh_man").value
+		location = Config.objects.get(name="location").value
+		devs = Device.objects.all().filter(location='待定')
+		for dev in devs:
+			dev.location = location
+			dev.user = wh_man
+			dev.save()
 		return render(request, 'upload_device.html', {'uploaded':True, 'log':log, 'success':success})
 	else:
 		return render(request, 'upload_device.html')
 
 # 更新 变更信息
 def upload_change(request):
-	check_login(request)
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
 	if request.method == 'POST':
-		success,log = device_change_log.go_f(request.FILES['file'].read())
+		fcont = request.FILES['file'].read()
+		# md5
+		fmd5 = hashlib.md5(fcont).hexdigest()
+		fh = FileHash.objects.filter(value=fmd5)
+		# 检查是否已上传
+		if fh.count() != 0:
+			success, log = False, '[%s] 上传过相同的文件，请核对!' % str(fh[0].in_date)
+		else:
+			FileHash.objects.create(in_date=now(),value=fmd5)
+			success,log = device_change_log.go_f(fcont)
 		return render(request, 'upload_change.html', {'uploaded':True, 'log':log, 'success':success})
 	else:
 		return render(request, 'upload_change.html')
+
+############
+#
+# 配置相关
+#	
+#############
+def chg_config(request):
+	changed = False
+	if request.method == 'POST':
+		exp_y = request.POST['exp_y']
+		# 判断是否为数字
+		try:
+			int(exp_y)
+		except:
+			exp_y = '6'
+		wh_man = request.POST['wh_man']
+		location = request.POST['location']
+		tmp = Config.objects.get(name="exp_y")
+		tmp.value = exp_y
+		tmp.save()
+		tmp = Config.objects.get(name="wh_man")
+		tmp.value = wh_man
+		tmp.save()
+		tmp = Config.objects.get(name="location")
+		tmp.value = location
+		tmp.save()
+		changed = True
+	else: 
+		exp_y = Config.objects.get(name="exp_y").value
+		wh_man = Config.objects.get(name="wh_man").value
+		location = Config.objects.get(name="location").value
+	return render(request, 'config.html', {'exp_y':exp_y, 'wh_man':wh_man, 'location':location, 'changed':changed})
 
 ############
 #
@@ -84,7 +165,8 @@ def upload_change(request):
 #查询设备
 @csrf_exempt
 def dev_s(request):
-	check_login(request)
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
 	if request.method == 'POST':
 		number = request.POST['number']
 		name = request.POST['name']
@@ -117,13 +199,15 @@ def dev_s(request):
 
 @csrf_exempt
 def chg(request):
-	check_login(request)
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
 	number = request.GET['number']
 	return render(request, 'change.html', {"number": number})
 
 @csrf_exempt
 def chg_s(request):
-	check_login(request)
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
 	number = request.POST['number'].strip()
 	# 去掉查询中的 \x7f 也算是一个适配
 	if number.find('\x7f'):
@@ -138,7 +222,8 @@ def chg_s(request):
 #
 ##########
 def export_dev(request):
-	check_login(request)
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
 	if request.method == 'POST':
 		number = request.POST['number']
 		name = request.POST['name']
@@ -216,7 +301,8 @@ def export_dev(request):
 #
 ##############
 def auto_aban():
-	lower_year = now().date().year - 6 #昨天
+	expire_year = int(Config.objects.get(name="exp_y").value)
+	lower_year = now().date().year - expire_year
 	month = now().date().month
 	day = now().date().day
 	try:
