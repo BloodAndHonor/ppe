@@ -60,5 +60,5 @@ def go(filename):
 	conn.close()
 
 if __name__ == '__main__':
-	filename = u'固定资产/设备信息.xlsx'
+	filename = u'固定资产/111.xlsx'
 	go(filename)

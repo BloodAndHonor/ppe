@@ -31,9 +31,10 @@ def _resolve(data):
 			print
 
 		devs.append(DeviceChange(*table.row_values(i)))
-
-	for i in devs:
-		i.dev_print()
+		
+	if DEBUG:
+		for i in devs:
+			i.dev_print()
 
 # 保存资产变更记录
 def _store(conn):

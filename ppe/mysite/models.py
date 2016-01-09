@@ -10,7 +10,7 @@ class User(models.Model):
 # 设备
 class Device(models.Model):
 	number = models.CharField(max_length=15, primary_key=True)
-	name = models.CharField(max_length=20)
+	name = models.CharField(max_length=50)
 	category_number = models.CharField(max_length=10)
 	model = models.CharField(max_length=50)
 	specification = models.CharField(max_length=50)
@@ -35,7 +35,7 @@ class Device(models.Model):
 # 变更
 class Change(models.Model):
 	log_date = models.DateTimeField()
-	name = models.CharField(max_length=20)
+	name = models.CharField(max_length=50)
 	number = models.CharField(max_length=20)
 	count = models.IntegerField()
 	unit = models.CharField(max_length=5)

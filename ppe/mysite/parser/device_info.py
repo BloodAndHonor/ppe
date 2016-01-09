@@ -32,8 +32,9 @@ def _resolve(data):
 
 		devs.append(DeviceInfo(*table.row_values(i)))
 
-	for i in devs:
-		i.dev_print()
+	if DEBUG:
+		for i in devs:
+			i.dev_print()
 
 # 保存设备基本信息
 def _store(conn):
@@ -75,7 +76,8 @@ def go_f(filecontent):
 
 	try:
 		_store(conn)
-	except:
+	except Exception,e:
+		print e
 		return False,"数据库操作失败"
 
 	conn.close()

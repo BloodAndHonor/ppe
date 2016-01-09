@@ -1,2 +1,4 @@
 固定资产
 *.pyc
+.DS_Store
+ppe/.DS_Store
