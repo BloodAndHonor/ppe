@@ -18,5 +18,7 @@ urlpatterns = patterns('',
     url(r'^chg/', mysite.views.chg, name='chg'), 
     url(r'^ex/', mysite.views.export_dev, name='export'), 
     url(r'^t/', mysite.views.auto_aban), 
-    url(r'^chg_config/', mysite.views.chg_config, name='chg_config')
+    url(r'^chg_config/', mysite.views.chg_config, name='chg_config'), 
+    url(r'^aban/', mysite.views.aban, name='aban'),
+    url(r'^fact/', mysite.views.fact_number, name='fact_num')
 )

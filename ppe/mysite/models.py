@@ -31,6 +31,7 @@ class Device(models.Model):
 	remarks = models.CharField(max_length=50)
 	funds_card = models.CharField(max_length=50)
 	user = models.CharField(max_length=50)
+	factory_number = models.CharField(max_length=50, default="")
 
 # 变更
 class Change(models.Model):

@@ -38,11 +38,13 @@ def login(request):
 	else:
 		name = request.POST['username']
 		password = request.POST['password']
+		check = request.POST.get('check_aban',False)
 		count = User.objects.filter(name=name, password=hashlib.md5(password).hexdigest()).count()
 		if(count > 0):
 			request.session['token'] = 'allowed'
-			# 每一次登录都设置需要自动报废的设备
-			auto_aban()
+			# 是否需要自动待报废
+			if check:
+				auto_aban()
 			return HttpResponseRedirect('/')
 		else:
 			return HttpResponse("登陆失败")
@@ -173,10 +175,11 @@ def dev_s(request):
 		status = request.POST['status']
 		user = request.POST['user']
 		location = request.POST['location']
+		model = request.POST['model']
+		# model = ""
 
 		kwargs = {}
 		# 解析出来的excel设备编号后面都多了这个，这里做个适配
-		# 原因待查
 		if number != "":
 			kwargs['number'] = number + '\x7f'
 
@@ -191,6 +194,9 @@ def dev_s(request):
 
 		if location != "":
 			kwargs['location'] = location
+
+		if model != "":
+			kwargs['model'] = model + '\x7f'
 
 		data = serializers.serialize('json', Device.objects.filter(**kwargs))
 		return HttpResponse(json.dumps(data), content_type="application/json")
@@ -233,7 +239,6 @@ def export_dev(request):
 
 		kwargs = {}
 		# 解析出来的excel设备编号后面都多了这个，这里做个适配
-		# 原因待查
 		if number != "":
 			kwargs['number'] = number + '\x7f'
 
@@ -248,6 +253,9 @@ def export_dev(request):
 
 		if location != "":
 			kwargs['location'] = location
+
+		if model != "":
+			kwargs['model'] = model + '\x7f'
 
 		data = Device.objects.filter(**kwargs)
 
@@ -297,7 +305,7 @@ def export_dev(request):
 
 ##############
 #
-# 自动报废
+# 自动待报废： 年限过期的设备自动待报废
 #
 ##############
 def auto_aban():
@@ -314,6 +322,39 @@ def auto_aban():
 	# print u'报废处理:'
 	for item in res:
 		# print item.number
-		item.status = u'报废'
+		item.status = u'待报废'
 		item.save()
 	return len(res)
+
+## 手动报废
+def aban(request):
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
+	num = request.GET['number']
+	ddev = Device.objects.filter(number=num)
+	if ddev.count() == 1:
+		dev = ddev.get()
+		if dev.status == u'待报废':
+			dev.status = u'报废'
+			dev.save()
+	return render(request, 'info.html', {"msg": u"仪器编号 "+ num.strip() + u" 的设备报废成功！"})
+
+############
+#
+# 出厂编号相关
+#	
+############
+@csrf_exempt
+def fact_number(request):
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
+	if request.method == 'POST':
+		number = request.POST['number']
+		factory_number = request.POST['fact_num']
+
+		print number, len(number), factory_number
+		ddev = Device.objects.filter(number=number)
+		dev = ddev.get()
+		dev.factory_number = factory_number
+		dev.save()
+		return HttpResponse("修改成功")
