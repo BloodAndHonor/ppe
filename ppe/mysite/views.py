@@ -10,6 +10,7 @@ import re
 from django.utils.timezone import now, timedelta
 import datetime
 import hashlib
+from django.db.models import Count
 ############
 #
 # 登陆相关
@@ -358,3 +359,71 @@ def fact_number(request):
 		dev.factory_number = factory_number
 		dev.save()
 		return HttpResponse("修改成功")
+
+############
+#
+# 统计相关
+#	
+############
+@csrf_exempt
+def stat(request):
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
+	if request.method == 'GET':
+		return render(request, 'stat.html')
+	else:
+		number = request.POST['number']
+		name = request.POST['name']
+		status = request.POST['status']
+		user = request.POST['user']
+		location = request.POST['location']
+		model = request.POST['model']
+		group = request.POST['group']
+
+		kwargs = {}
+		# 解析出来的excel设备编号后面都多了这个，这里做个适配
+		if number != "":
+			kwargs['number'] = number + '\x7f'
+
+		if name != "":
+			kwargs['name'] = name
+
+		if status != "":
+			kwargs['status'] = status
+
+		if user != "":
+			kwargs['user'] = user
+
+		if location != "":
+			kwargs['location'] = location
+
+		if model != "":
+			kwargs['model'] = model + '\x7f'
+
+		dm = Device.objects.filter(**kwargs).values(group).annotate(count=Count('name'))
+		data = {}
+		data['dm'] = dm
+		data['kwargs'] = json.dumps(kwargs)
+		data['lastGroup'] = group
+		return render(request, 'stat.html', data)
+
+## 流式操作
+@csrf_exempt
+def flowop(request):
+	if(not check_login(request)):
+		return HttpResponseRedirect('/login')
+	if request.method == 'POST':
+		kwargs = request.POST['kwargs']
+		lastGroup = request.POST['lastGroup']
+		value = request.POST['value']
+		group = request.POST['group']
+		kwargs = json.loads(kwargs)
+		kwargs[lastGroup] = value
+
+		dm = Device.objects.filter(**kwargs).values(group).annotate(count=Count('name'))
+		data = {}
+		data['dm'] = dm
+		data['kwargs'] = json.dumps(kwargs)
+		data['lastGroup'] = group
+		return render(request, 'stat.html', data)
+
