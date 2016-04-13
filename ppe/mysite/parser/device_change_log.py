@@ -48,11 +48,11 @@ def _store(conn):
 def _update(conn):
 	cur = conn.cursor()
 	for item in devs:
-		count = cur.execute('select * from mysite_device where number = "%s"' % item.number)
+		count = cur.execute('select * from mysite_device where number = "%s\x7f"' % item.number)
 		if count != 1:
 			print "设备编号: %s 不存在该设备的纪录" % item.number
 		else:
-			sql = 'update mysite_device set location = "%s", user = "%s"' % (item.new_location, item.new_user)
+			sql = 'update mysite_device set location = "%s", user = "%s" where number = "%s\x7f"' % (item.new_location, item.new_user, item.number)
 			cur.execute(sql)
 	conn.commit()
 	cur.close()

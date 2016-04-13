@@ -22,5 +22,6 @@ urlpatterns = patterns('',
     url(r'^aban/', mysite.views.aban, name='aban'),
     url(r'^fact/', mysite.views.fact_number, name='fact_num'),
     url(r'^stat/', mysite.views.stat, name='stat'),
-    url(r'^flow/', mysite.views.flowop, name='flow')
+    url(r'^flow/', mysite.views.flowop, name='flow'),
+    url(r'^reset/', mysite.views.reset, name='reset')
 )

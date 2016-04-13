@@ -31,7 +31,7 @@
       data = {
         number: "{{ number }}"
       };
-      $.post({% url 'chg_s' %}, data, function(res, success){
+      $.post("{% url 'chg_s' %}", data, function(res, success){
         if(success)
         {
           var retval = eval('('+res+')');

@@ -57,7 +57,7 @@ class DeviceInfo:
 
 	def sql(self):
 		# insert IGNORE 主键重复则忽略改记录
-		return 'insert ignore into mysite_device values ("%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s")' % (
+		return 'insert ignore into mysite_device values ("%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","")' % (
 			self.number,
 			self.name,
 			self.category_number,

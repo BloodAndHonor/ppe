@@ -32,6 +32,18 @@ def init(request):
 	else:
 		return HttpResponse("已使用，不符合初始化条件")
 
+def reset(request):
+	User.objects.create(name="lyp", password=hashlib.md5("123456").hexdigest())
+	# 清空信息
+	Config.objects.all().delete()
+	Device.objects.all().delete()
+	Change.objects.all().delete()
+	# 初始化
+	Config.objects.create(name='wh_man', value='万利军')
+	Config.objects.create(name='location', value='仓库')
+	Config.objects.create(name='exp_y', value='6')
+	return HttpResponse("重置成功，用户名 lyp，密码 123456")
+
 # 登录
 def login(request):
 	if request.method == 'GET':
